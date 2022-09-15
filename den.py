@@ -1235,7 +1235,7 @@ async def handler(event):
     name = utils.get_display_name(sender)
     us_id = utils.get_peer_id(sender)
     get_user_id = get_userx(user_id=us_id)
-    await client.send_message(entity=us_id, message=f"<b>🥝 Введите</b> <code>add_q </code>(номер) <b>QIWI кошелька🖍 </b>",  parse_mode="HTML")
+    await client.send_message(entity=us_id, message=f"<b>🥝 Введите</b> <code>add_q </code>И номер без + <b>QIWI кошелька🖍 </b>",  parse_mode="HTML")
 
 
 @client.on(events.NewMessage(pattern='/start'))

@@ -1,0 +1,45 @@
+.wrap {
+	width: 768px;
+	margin: 0 auto;
+	text-align: left;
+	}
+	
+.top_sub {
+    position: relative;
+    z-index: 1;
+    top: 0;
+    right: 0;
+	padding: 20px 20px 30px 0;
+	}
+.top_sub a{
+	margin: 0 0 0 auto;
+	}
+
+.logo {
+	text-align:center;
+	}
+.logo_text {
+    margin: 0 auto 45px auto;
+	}
+.contact_zag {
+    margin: 0 auto 50px auto;
+	}
+.bottom_text {
+    margin: 0 auto;
+	}	
+	
+.block{
+	margin: 0 66px 60px 66px;
+	}	
+.block:nth-child(4n){
+	margin: 0 66px 60px 66px;
+	}	
+.block:nth-child(3n){
+	margin: 0 66px 60px 66px;
+	}		
+	
+	
+	
+	
+	
+	

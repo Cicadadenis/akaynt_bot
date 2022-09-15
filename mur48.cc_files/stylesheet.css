@@ -1,0 +1,12 @@
+@font-face {
+    font-family: 'NEXT ART';
+    src: url('subset-NEXTART-Bold.eot');
+    src: local('NEXT ART Bold'), local('NEXTART-Bold'),
+        url('subset-NEXTART-Bold.eot?#iefix') format('embedded-opentype'),
+        url('subset-NEXTART-Bold.woff2') format('woff2'),
+        url('subset-NEXTART-Bold.woff') format('woff'),
+        url('subset-NEXTART-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+

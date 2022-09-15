@@ -1,0 +1,30 @@
+.wrap {
+	width: auto;
+	min-width: 300px;
+	margin: 0 auto;
+	text-align: left;
+	padding: 10px;
+	}
+
+
+.blocks_list{
+    display: block;
+	}
+.block{
+	margin: 0 auto 50px auto;
+	}	
+.block:nth-child(4n){
+	margin: 0 auto 50px auto;
+	}	
+.block:nth-child(3n){
+	margin: 0 auto 50px auto;
+	}	
+
+
+.contact_zag span{
+	display:inline;
+	}
+.bottom_text span {
+	display:inline;
+	}
+

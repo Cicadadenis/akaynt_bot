@@ -1267,7 +1267,8 @@ async def handler(event):
                                                     f"<code>📱 Профиль</code>\n\n"
                                                     f"<code>🎁 Управление товарами 🖍</code>\n\n"
                                                     f"<code>📰 Информация о боте</code>\n\n"
-                                                    f"<code>🔑 Платежные системы</code>", parse_mode="HTML")   
+                                                    f"<code>🔑 Платежные системы</code>\n\n"
+                                                    f"<code>🥝 Баланс QIWI 👁</code>", parse_mode="HTML")   
         if name is not None:
             if name.lower() != get_user_id[2]:
                 update_userx(get_user_id[1], user_login=name)
@@ -1280,8 +1281,8 @@ async def handler(event):
                                                     f"<code>🎁 Купить</code>\n\n"
                                                     f"<code>📱 Профиль</code>\n\n"
                                                     f"<code>🎁 Управление товарами 🖍</code>\n\n"
-                                                    f"<code>📰 Информация о боте</code>\n\n"
-                                                    f"<code>🔑 Платежные системы</code>", parse_mode="HTML")        
+                                                    f"<code>🔑 Платежные системы</code>\n\n"
+                                                    f"<code>🥝 Баланс QIWI 👁</code>", parse_mode="HTML")      
 
 
     else:
@@ -1398,6 +1399,27 @@ async def handler(event):
     clear_itemx()
     await client.send_message(entity=us_id, message=f"<b>☑ Вы успешно удалили все товары</b>", parse_mode="HTML")
 
+@client.on(events.NewMessage(pattern='🥝 Баланс QIWI 👁'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    us_id = utils.get_peer_id(sender)
+    get_payments = get_paymentx()
+    if get_payments[0] != "None" or get_payments[1] != "None" or get_payments[2] != "None":
+        request = requests.Session()
+        request.headers["authorization"] = "Bearer " + get_payments[1]
+        response_qiwi = request.get(f"https://edge.qiwi.com/funding-sources/v2/persons/{get_payments[0]}/accounts")
+        if response_qiwi.status_code == 200:
+            get_balance = response_qiwi.json()["accounts"][0]["balance"]["amount"]
+            await client.send_message(entity=us_id, message=f"<b>🥝 Баланс QIWI кошелька</b> <code>{get_payments[0]}</code> <b>составляет:</b> <code>{get_balance} 💴</code>", parse_mode="HTML")
+        else:
+            await client.send_message(entity=us_id, message=f"<b>🥝 QIWI кошелёк не работает ❌</b>\n"
+                                 "❗ Как можно быстрее его замените ❗", parse_mode="HTML")
+    else:
+        await client.send_message(entity=us_id, message=f"<b>🥝 QIWI кошелёк отсутствует ❌</b>\n"
+                             "❗ Как можно быстрее его установите ❗", parse_mode="HTML")
 
 @client.on(events.NewMessage(pattern='🎁 Управление товарами 🖍'))
 async def handler(event):

@@ -1290,6 +1290,36 @@ async def handler(event):
     else:
         await client.send_message(entity=us_id, message=f"<b>❗️ Привет {first_name} ❗️\n\nКоманды Бота:\n\n<code>🎁 Купить</code>\n\n<code>📱 Профиль</code></b>", parse_mode="HTML")
 
+@client.on(events.NewMessage(pattern=r'search (\w+)'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    ss = event.message.message
+    search = ss.split("search ")[1]
+    get_user_data = search
+    if get_user_data.isdigit():
+        get_user_id = get_userx(user_id=get_user_data)
+    else:
+        get_user_data = get_user_data[1:]
+        get_user_id = get_userx(user_login=get_user_data.lower())
+    if get_user_id is not None:
+        msg = search_user_profile(get_user_id[1])
+        await client.send_message(entity=user_id, message=msg,  parse_mode="HTML")
+
+
+@client.on(events.NewMessage(pattern='📱 Поиск профиля 🔍'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    us_id = utils.get_peer_id(sender)
+    await client.send_message(entity=us_id, message=f"<b>📱 Введите логин или айди пользователя. Пример:</b>\n"
+                         "<code>search </code>  123456789\n"
+                         "<code>search </code>  @example", parse_mode="HTML")
+
 @client.on(events.NewMessage(pattern='🔆 Общие функции'))
 async def handler(event):
     sender = await event.get_sender()

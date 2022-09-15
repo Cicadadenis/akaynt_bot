@@ -1266,6 +1266,7 @@ async def handler(event):
                                                     f"<code>🎁 Купить</code>\n\n"
                                                     f"<code>📱 Профиль</code>\n\n"
                                                     f"<code>🎁 Управление товарами 🖍</code>\n\n"
+                                                    f"<code>🔆 Общие функции</code>\n\n"
                                                     f"<code>📰 Информация о боте</code>\n\n"
                                                     f"<code>🔑 Платежные системы</code>\n\n"
                                                     f"<code>🥝 Баланс QIWI 👁</code>", parse_mode="HTML")   
@@ -1281,12 +1282,26 @@ async def handler(event):
                                                     f"<code>🎁 Купить</code>\n\n"
                                                     f"<code>📱 Профиль</code>\n\n"
                                                     f"<code>🎁 Управление товарами 🖍</code>\n\n"
+                                                    f"<code>🔆 Общие функции</code>\n\n"
                                                     f"<code>🔑 Платежные системы</code>\n\n"
                                                     f"<code>🥝 Баланс QIWI 👁</code>", parse_mode="HTML")      
 
 
     else:
         await client.send_message(entity=us_id, message=f"<b>❗️ Привет {first_name} ❗️\n\nКоманды Бота:\n\n<code>🎁 Купить</code>\n\n<code>📱 Профиль</code></b>", parse_mode="HTML")
+
+@client.on(events.NewMessage(pattern='🔆 Общие функции'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    us_id = utils.get_peer_id(sender)
+    await client.send_message(entity=us_id, message=f"<b>🔆 Выберите нужную функцию.</b>\n\n"
+                                                    f"➖➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+                                                    f"<code>📱 Поиск профиля 🔍</code>\n\n"
+                                                    f"<code>📢 Рассылка</code>\n\n"
+                                                    f"<code>📃 Поиск чеков 🔍</code>\n\n", parse_mode="HTML")
 
 @client.on(events.NewMessage(pattern='📰 Информация о боте'))
 async def handler(event):

@@ -237,6 +237,12 @@ def get_refillx(what_select, **kwargs):
         get_response = db.execute(sql, parameters)
         get_response = get_response.fetchone()
     return get_response
+def update_paymentx(**kwargs):
+    with sqlite3.connect(path_to_db) as db:
+        sql = f"UPDATE storage_payment SET XXX "
+        sql, parameters = update_format_with_args(sql, kwargs)
+        db.execute(sql, parameters)
+        db.commit()
 
 def add_refillx(user_id, user_login, user_name, comment, amount, receipt, way_pay, dates, dates_unix):
     with sqlite3.connect(path_to_db) as db:
@@ -491,12 +497,21 @@ try:
 except:
     print('\n\n     Старт Бота')
     pass
+def clear_positionx():
+    with sqlite3.connect(path_to_db) as db:
+        sql = "DELETE FROM storage_position"
+        db.execute(sql)
+        db.commit()
 
 def add_us(name, us_id, tt):
     cur.execute(
             f"""INSERT INTO cicada VALUES('{name}', '{us_id}', '{tt}')""")
     con.commit()  
-
+def clear_itemx():
+    with sqlite3.connect(path_to_db) as db:
+        sql = "DELETE FROM storage_item"
+        db.execute(sql)
+        db.commit()
 def whe_us(us_id):
     
     cur.execute(
@@ -956,6 +971,7 @@ async def handler(event):
     name = utils.get_display_name(sender)
     user_id = utils.get_peer_id(sender)
     ss = event.message.message
+    pos_add.clear()
     kateg = ss.split("create_position_here ")[1]
     pos_add.append(kateg)
     await client.send_message(entity=user_id, message=f"<b>📁 Введите название для позиции 🏷</b>\n" \
@@ -1007,6 +1023,7 @@ async def handler(event):
 
     @client.on(events.NewMessage)
     async def handler(event):
+    
         kkk = pos_add[1]
         sender = await event.get_sender()
         ggg =  event.message
@@ -1014,15 +1031,20 @@ async def handler(event):
         user_id = utils.get_peer_id(sender)
         if  event.message.message == kkk:
             gaga = await client.download_media(event.message.photo, f"foto/{kkk}.jpg")
-            catategory_id = pos_add[0]
-            position_name = pos_add[1]
-            position_price = pos_add[2]
-            position_discription = pos_add[3]
-            position_photo = f"foto/{kkk}.jpg"
-            position_id = [random.randint(100000000, 999999999)]
-            add_positionx(position_id[0], position_name, position_price, position_discription,
-                        position_photo, get_dates(), catategory_id)
-            await client.send_message(entity=user_id, message="<b>📁 Позиция была успешно создана ✅</b>", parse_mode="HTML")
+            if gaga is not None:
+                catategory_id = pos_add[0]
+                position_name = pos_add[1]
+                position_price = pos_add[2]
+                position_discription = pos_add[3]
+                position_photo = f"foto/{kkk}.jpg"
+                position_id = [random.randint(100000000, 999999999)]
+                add_positionx(position_id[0], position_name, position_price, position_discription,
+                            position_photo, get_dates(), catategory_id)
+                await client.send_message(entity=user_id, message="<b>📁 Позиция была успешно создана ✅</b>", parse_mode="HTML")
+                pos_add.clear()
+            else:
+                await client.send_message(entity=user_id, message="<b>Фото Отсутствует</b>",  parse_mode="HTML")
+
     # if event.out and event.is_reply and 'save pic' in event.raw_text:
     #     reply_msg = await event.get_reply_message()
     #     replied_to_user = reply_msg.sender
@@ -1129,11 +1151,12 @@ async def handler(event):
     user_id = utils.get_peer_id(sender)
     ss = event.message.message
     key = ss.split("sekred_key ")[1]
+    print(key)
     qiwi_baza.append(key)
     await client.send_message(entity=user_id, message=f"<b>🥝 Проверка введённых QIWI данных... 🔄</b>", parse_mode="HTML")
-    qiwi_login = qiwi_baza[0]
+    qiwi_login = f"+{qiwi_baza[0]}"
     qiwi_token = qiwi_baza[1]
-    qiwi_private_key = qiwi_baza[2]
+    qiwi_private_key = key
     try:
         qiwi = QiwiP2P(qiwi_private_key)
         bill = qiwi.bill(amount=1, lifetime=1)
@@ -1309,6 +1332,72 @@ async def handler(event):
               f"🛒 Продано товаров: <code>{len(all_purchases)}</code>\n"
     await client.send_message(entity=us_id, message=message, parse_mode="HTML")
 
+@client.on(events.NewMessage(pattern=r'position_edit (\w+)'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    ss = event.message.message
+    category_id = ss.split("position_edit ")[1]
+
+@client.on(events.NewMessage(pattern=r'edit_category (\w+)'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    ss = event.message.message
+    category_id = ss.split("edit_category ")[1]
+    get_positions = get_positionsx("*", category_id=category_id)
+    if len(get_positions) >= 1:
+        for a in range(len(get_positions)):
+            get_items = get_itemsx("*", position_id=get_positions[a][1])
+            await client.send_message(entity=user_id, message=f"{get_positions[a][2]} | {get_positions[a][3]}руб | {len(get_items)}шт  Отправь 👉  <code>position_edit {get_positions[a][1]}:{category_id}</code>", parse_mode="HTML")
+
+
+
+
+@client.on(events.NewMessage(pattern='📁 Удалить позиции ❌'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    us_id = utils.get_peer_id(sender)
+    await client.send_message(entity=us_id, message="<b>⌛ Ждите, позиции удаляются...</b>",  parse_mode="HTML")
+    get_positions = len(get_all_positionsx())
+    get_items = len(get_all_itemsx())
+    clear_positionx()
+    clear_itemx()
+    await client.send_message(entity=us_id, message=f"<b>☑ Вы успешно удалили все позиции({get_positions}шт) и товары({get_items}шт)</b>", parse_mode="HTML")
+
+@client.on(events.NewMessage(pattern='📁 Изменить позицию 🖍'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    us_id = utils.get_peer_id(sender)
+    x = 0
+    get_categories = get_all_categoriesx()
+    await client.send_message(entity=us_id, message="<b>📁 Выберите категорию с нужной вам позицией 🖍</b>", parse_mode="HTML")
+    for a in range(len(get_categories)):
+        await client.send_message(entity=us_id, message=f"{get_categories[a][2]} Отправь 👉 <code>edit_category {get_categories[a][1]}</code>", parse_mode="HTML")
+
+
+@client.on(events.NewMessage(pattern='🎁 Удалить товары ❌'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    us_id = utils.get_peer_id(sender)
+    await client.send_message(entity=us_id, message=f"<b>⌛ Ждите, товары удаляются...</b>", parse_mode="HTML")
+    get_items = get_all_itemsx()
+    clear_itemx()
+    await client.send_message(entity=us_id, message=f"<b>☑ Вы успешно удалили все товары</b>", parse_mode="HTML")
+
 
 @client.on(events.NewMessage(pattern='🎁 Управление товарами 🖍'))
 async def handler(event):
@@ -1317,9 +1406,9 @@ async def handler(event):
     ff = ggg.message
     name = utils.get_display_name(sender)
     us_id = utils.get_peer_id(sender)
-    tov = (f"<code>📜 Создать категорию ➕</code>\n➖➖➖➖➖➖➖\n<code>📜 Изменить категорию 🖍</code>\n➖➖➖➖➖➖➖\n<code>📜 Удалить категории ❌</code>\n➖➖➖➖➖➖➖\n"
-           f"<code>📁 Создать позицию ➕</code>\n➖➖➖➖➖➖➖\n<code>📁 Изменить позицию 🖍</code>\n➖➖➖➖➖➖➖\n<code>📁 Удалить позиции ❌</code>\n➖➖➖➖➖➖➖\n"
-           f"<code>🎁 Добавить товары ➕</code>\n➖➖➖➖➖➖➖\n<code>🎁 Изменить товары 🖍</code>\n➖➖➖➖➖➖➖\n<code>🎁 Удалить товары ❌</code>\n")
+    tov = (f"<code>📜 Создать категорию ➕</code>\n➖➖➖➖➖➖➖\n<code>📜 Удалить категории ❌</code>\n➖➖➖➖➖➖➖\n"
+           f"<code>📁 Создать позицию ➕</code>\n➖➖➖➖➖➖➖\n<code>📁 Удалить позиции ❌</code>\n➖➖➖➖➖➖➖\n"
+           f"<code>🎁 Добавить товары ➕</code>\n➖➖➖➖➖➖➖\n<code>🎁 Удалить товары ❌</code>\n")
     await client.send_message(entity=us_id, message=tov, parse_mode="HTML")
 
 @client.on(events.NewMessage(pattern='🎁 Купить'))
@@ -1357,39 +1446,45 @@ async def handler(event):
     # if whe_us(us_id=us_id) == False:
     if len(bb) == 13:
         xxx = bb.split(":")
-        print(xxx)
-        category_id = xxx[0]
-        x = int(xxx[1])
-        y = int(xxx[-1])
-      
-        get_positions = get_positionsx("*", category_id=category_id)
-        # get_items = get_itemsx("*", position_id=get_positions[x][1])
-        
-        # get_items = get_itemsx("*", position_id=get_positions[x])
-        # print(get_items)
-        send_msg = f"<b>🎁 Покупка товара:</b>\n" \
-            f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
-            f"<b>🏷 Название:</b> <code>{get_positions[x][2]}</code>\n" \
-            f"<b>💵 Стоимость:</b> <code>{get_positions[x][3]}💴</code>\n" \
-            f"<b>📦 Количество:</b> <code>{y}шт</code>\n" \
-            f"<b>📜 Описание:</b>\n" \
-            f"{get_positions[x][4]}\n" \
-            f"<b>✅ Для покупки Товара Отправь:</b>\n" \
-            f"👉    <code>pay= {get_positions[x][1]}</code> <b>И Количество шт</b>"
-        message=f"<b>{get_positions[x][4]}\n\n{get_positions[x][2]} | {get_positions[x][3]}руб | {y}шт  отправь код для покупки</b> <code>/ok {get_positions[x][1]} 1</code></b>"
-        await client.send_file(entity=us_id, file=get_positions[x][5], caption=send_msg, parse_mode="HTML")
-       
+        if int(xxx[2]) >= 1:
+            category_id = xxx[0]
+            x = int(xxx[1])
+            y = int(xxx[-1])
 
+            get_positions = get_positionsx("*", category_id=category_id)
+            # get_items = get_itemsx("*", position_id=get_positions[x][1])
+
+            # get_items = get_itemsx("*", position_id=get_positions[x])
+            # print(get_items)
+            send_msg = f"<b>🎁 Покупка товара:</b>\n" \
+                f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
+                f"<b>🏷 Название:</b> <code>{get_positions[x][2]}</code>\n" \
+                f"<b>💵 Стоимость:</b> <code>{get_positions[x][3]}💴</code>\n" \
+                f"<b>📦 Количество:</b> <code>{y}шт</code>\n" \
+                f"<b>📜 Описание:</b>\n" \
+                f"{get_positions[x][4]}\n" \
+                f"<b>✅ Для покупки Товара Отправь:</b>\n" \
+                f"👉    <code>pay= {get_positions[x][1]}</code> <b>И Количество шт</b>"
+            message=f"<b>{get_positions[x][4]}\n\n{get_positions[x][2]} | {get_positions[x][3]}руб | {y}шт  отправь код для покупки</b> <code>/ok {get_positions[x][1]} 1</code></b>"
+            await client.send_file(entity=us_id, file=get_positions[x][5], caption=send_msg, parse_mode="HTML")
+        else:
+            await client.send_message(entity=us_id, message="<b>🎁 Товары в данное время отсутствуют.</b>", parse_mode="HTML")
     if len(bb) == 9:
+        
         x = 0
         get_positions = get_positionsx("*", category_id=bb)
-        for a in range(len(get_positions)):
-            category_id = bb
-            get_items = get_itemsx("*", position_id=get_positions[a][1])
-            
-            message=f"💎 <b>{get_positions[a][2]}</b> 💎  Отправь 👉<code>{category_id}:{a}:{len(get_items)}</code>"
-            # message=f"<b>{get_positions[a][2]} | {get_positions[a][3]}руб | {len(get_items)}шт  отправь код для покупки</b> <code>/ok {get_positions[a][1]} 1</code>"
-            await client.send_message(entity=us_id, message=message, parse_mode="HTML")
+        if len(get_positions) == 0:
+            await client.send_message(entity=us_id, message="<b>🎁 Товары в данное время отсутствуют.</b>", parse_mode="HTML")
+        if len(get_positions) >= 1:
+            for a in range(len(get_positions)):
+                category_id = bb
+                get_items = get_itemsx("*", position_id=get_positions[a][1])
+
+                message=f"💎 <b>{get_positions[a][2]}</b> 💎  Отправь 👉<code>{category_id}:{a}:{len(get_items)}</code>"
+                # message=f"<b>{get_positions[a][2]} | {get_positions[a][3]}руб | {len(get_items)}шт  отправь код для покупки</b> <code>/ok {get_positions[a][1]} 1</code>"
+                await client.send_message(entity=us_id, message=message, parse_mode="HTML")
+        # except:
+            # await client.send_message(entity=us_id, message="<b>🎁 Товары в данное время отсутствуют.</b>", parse_mode="HTML")
 #     else:
 #         sender = await event.get_sender()
 #         ggg =  event.message

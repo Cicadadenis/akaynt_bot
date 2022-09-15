@@ -777,17 +777,17 @@ async def handler(event):
     await client.send_message(entity=user_id, message=msg, parse_mode="HTML")
 
 
-@client.on(events.NewMessage(pattern='🔆 Общие функции'))
-async def handler(event):
-    sender = await event.get_sender()
-    first_name = sender.first_name
-    ggg =  event.message
-    ff = ggg.message
-    name = utils.get_display_name(sender)
-    user_id = utils.get_peer_id(sender)
-    get_user_id = get_userx(user_id=user_id)
-    tov = (f"<code>📱 Поиск профиля 🔍</code>\n➖➖➖➖➖➖➖\n<code>📢 Рассылка</code>\n➖➖➖➖➖➖➖\n<code>📃 Поиск чеков 🔍</code>\n➖➖➖➖➖➖➖\n")
-    await client.send_message(entity=user_id, message=tov, parse_mode="HTML")
+# @client.on(events.NewMessage(pattern='🔆 Общие функции'))
+# async def handler(event):
+#     sender = await event.get_sender()
+#     first_name = sender.first_name
+#     ggg =  event.message
+#     ff = ggg.message
+#     name = utils.get_display_name(sender)
+#     user_id = utils.get_peer_id(sender)
+#     get_user_id = get_userx(user_id=user_id)
+#     tov = (f"<code>📱 Поиск профиля 🔍</code>\n➖➖➖➖➖➖➖\n<code>📢 Рассылка</code>\n➖➖➖➖➖➖➖\n<code>📃 Поиск чеков 🔍</code>\n➖➖➖➖➖➖➖\n")
+#     await client.send_message(entity=user_id, message=tov, parse_mode="HTML")
 
 @client.on(events.NewMessage(pattern='📜 Создать категорию ➕'))
 async def handler(event):

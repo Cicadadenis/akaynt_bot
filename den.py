@@ -228,6 +228,7 @@ else:
         admins = [admins]
     else:
         admins = []
+        
 def search_user_profile(user_id):
     get_status_user = get_userx(user_id=user_id)
     get_purchases = get_purchasesx("*", user_id=user_id)

@@ -5,6 +5,7 @@ import time
 import configparser
 import requests
 from aiogram import types
+import asyncio
 import io
 from aiogram.dispatcher import FSMContext
 from aiogram.types import CallbackQuery
@@ -61,6 +62,25 @@ import logging
 import random
 import sqlite3
 import time
+
+class IsBuy():
+    async def check(self, message: types.Message):
+        get_settings = get_settingsx()
+        if get_settings[3] == "True" or str(message.from_user.id) in admins:
+            return False
+        else:
+            return True
+
+
+# Проверка на технические работы
+class IsWork():
+    async def check(self, message: types.Message):
+        get_settings = get_settingsx()
+        if get_settings[2] == "True" or str(message.from_user.id) in admins:
+            return False
+        else:
+            return True
+
 def get_dates():
     return datetime.datetime.today().replace(microsecond=0)
 # from data.config import bot_description
@@ -228,7 +248,7 @@ else:
         admins = [admins]
     else:
         admins = []
-        
+
 def search_user_profile(user_id):
     get_status_user = get_userx(user_id=user_id)
     get_purchases = get_purchasesx("*", user_id=user_id)
@@ -261,6 +281,13 @@ def update_paymentx(**kwargs):
         sql, parameters = update_format_with_args(sql, kwargs)
         db.execute(sql, parameters)
         db.commit()
+def update_settingsx(**kwargs):
+    with sqlite3.connect(path_to_db) as db:
+        sql = f"UPDATE storage_settings SET XXX "
+        sql, parameters = update_format_with_args(sql, kwargs)
+        db.execute(sql, parameters)
+        db.commit()
+
 
 def add_refillx(user_id, user_login, user_name, comment, amount, receipt, way_pay, dates, dates_unix):
     with sqlite3.connect(path_to_db) as db:
@@ -482,7 +509,13 @@ def get_all_purchasesx():
         get_response = db.execute(sql)
         get_response = get_response.fetchall()
     return get_response
-
+def get_purchasex(what_select, **kwargs):
+    with sqlite3.connect(path_to_db) as db:
+        sql = f"SELECT {what_select} FROM storage_purchases WHERE "
+        sql, parameters = get_format_args(sql, kwargs)
+        get_response = db.execute(sql, parameters)
+        get_response = get_response.fetchone()
+    return get_response
 def get_all_usersx():
     with sqlite3.connect(path_to_db) as db:
         get_response = db.execute("SELECT * FROM storage_users")
@@ -520,6 +553,20 @@ def clear_positionx():
         sql = "DELETE FROM storage_position"
         db.execute(sql)
         db.commit()
+
+async def send_message_to_user(message, user_id):
+    receive_users, block_users = 0, 0
+    users = get_all_usersx()
+    for user in users:
+        try:
+            await client.send_message(user[1], message)
+            receive_users += 1
+        except:
+            block_users += 1
+        await asyncio.sleep(0.05)
+    await client.send_message(entity=user_id, message=f"<b>📢 Рассылка была завершена ☑</b>\n"
+                                                      f"👤 Пользователей получило сообщение: <code>{receive_users} ✅</code>\n"
+                                                      f"👤 Пользователей не получило сообщение: <code>{block_users} ❌</code>", parse_mode="HTML")
 
 def add_us(name, us_id, tt):
     cur.execute(
@@ -691,7 +738,7 @@ async def handler(event):
                                       f"👤 Покупатель: <a href='tg://user?id={get_user[1]}'>{get_user[3]}</a> <code>({get_user[1]})</code>\n"
                                       f"🕜 Дата покупки: <code>{buy_time}</code>", parse_mode="HTML")            
         else:
-            await client.send_message(entity=us_id, message=f"<b>❗ На вашем счёте недостаточно средств</b>\n\nПополнить счет команда <code>qiwi 100</code>", parse_mode="HTML")
+            await client.send_message(entity=us_id, message=f"<b>❗ На вашем счёте недостаточно средств</b>\n\nПополнить счет команда <code>qiwi {amount_pay}</code>", parse_mode="HTML")
 
 
 
@@ -766,6 +813,141 @@ async def handler(event):
                                     f"🔄 После оплаты, нажмите на <code>Проверить оплату</code>"
                 await client.send_message(entity=us_id, message=f"{send_message}", parse_mode="HTML")
                 # await client.send_message(entity=us_id, message=f"Pay:{way_pay}:{generate_number_check}:{event.message.id}", parse_mode="HTML")
+
+@client.on(events.NewMessage(pattern=r'receipt (\w+)'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    ss = event.message.message
+    receipt = ss.split("receipt ")[1]
+    receipt = receipt[1:]
+    if ss.startswith("+"):
+        get_input = get_refillx("*", receipt=receipt)
+        if get_input is not None:
+            if get_input[7] == "Form":
+                way_input = "🥝 Способ пополнения: <code>По форме</code>"
+            elif get_input[7] == "Nickname":
+                way_input = "🥝 Способ пополнения: <code>По никнейму</code>"
+            elif get_input[7] == "Number":
+                way_input = "🥝 Способ пополнения: <code>По номеру</code>"
+            await client.send_message(entity=user_id, message=f"<b>📃 Чек:</b> <code>+{get_input[6]}</code>\n"
+                                 "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+                                 f"👤 Пользователь: <a href='tg://user?id={get_input[1]}'>{get_input[3]}</a> <code>({get_input[1]})</code>\n"
+                                 f"💵 Сумма: <code>{get_input[5]}💴</code>\n"
+                                 f"{way_input}\n"
+                                 f"🏷 Комментарий: <code>{get_input[4]}</code>\n"
+                                 f"🕜 Дата пополнения: <code>{get_input[8]}</code>", parse_mode="HTML")
+        else:
+            await client.send_message(entity=user_id, message=f"<b>❌ Чек не был найден.</b>\n"
+                                 "📃 Введите receipt  номер покупки. Пример:\n"
+                                 "receipt  +123456789123\n"
+                                 "receipt  #123456789123", parse_mode="HTML")
+    elif ss.startswith("#"):
+        get_purchase = get_purchasex("*", receipt=receipt)
+        if get_purchase is not None:
+            buy_items = "<b>📍 Купленные товары:</b>\n" + get_purchase[10]
+            await client.send_message(entity=user_id, message=f"<b>📃 Чек:</b> <code>#{get_purchase[4]}</code>\n"
+                                 f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+                                 f"🏷 Название товара: <code>{get_purchase[9]}</code>\n"
+                                 f"📦 Куплено товаров: <code>{get_purchase[5]}шт</code>\n"
+                                 f"💸 Цена 1-го товара: <code>{get_purchase[7]}💴</code>\n"
+                                 f"💵 Сумма покупки: <code>{get_purchase[6]}💴</code>\n"
+                                 f"👤 Купил товар: <a href='tg://user?id={get_purchase[1]}'>{get_purchase[3]}</a> <code>({get_purchase[1]})</code>\n"
+                                 f"🔻 Баланс до покупки: <code>{get_purchase[11]}💴</code>\n"
+                                 f"🔺 Баланс после покупки: <code>{get_purchase[12]}💴</code>\n"
+                                 f"🕜 Дата покупки: <code>{get_purchase[13]}</code>\n"
+                                 f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+                                 f"{buy_items}", parse_mode="HTML")
+        else:
+            await client.send_message(entity=user_id, message=f"<b>❌ Чек не был найден.</b>\n"
+                                 "📃 Введите receipt  номер покупки. Пример:\n"
+                                 "receipt  +123456789123\n"
+                                 "receipt  #123456789123", parse_mode="HTML")
+            
+    else:
+        await client.send_message(entity=user_id, message="<b>❌ Данные были введены неверно.</b>\n"
+                                 "📃 Введите receipt  номер покупки. Пример:\n"
+                                 "receipt  +123456789123\n"
+                                 "receipt  #123456789123", parse_mode="HTML")
+
+
+@client.on(events.NewMessage(pattern='📃 Поиск чеков 🔍'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    await client.send_message(entity=user_id, message=f"<b>📃 Отправьте Команду <code>receipt </code> И номер чека. Пример:</b>\n"
+                         "receipt +123456789\n"
+                         "receipt #F123456789", parse_mode="HTML")
+
+
+
+@client.on(events.NewMessage(pattern='🟢 Включить покупки'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    update_settingsx(status_buy="True")
+    await client.send_message(entity=user_id, message="<b>🟢 Покупки в боте были включены.</b>", parse_mode="HTML")
+
+
+
+@client.on(events.NewMessage(pattern='🔴 Выключить покупки'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    update_settingsx(status_buy="False")
+    await client.send_message(entity=user_id, message="<b>🔴 Покупки в боте были выключены.</b>", parse_mode="HTML")
+
+
+
+@client.on(events.NewMessage(pattern='🔴 Отправить на тех. работы'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    update_settingsx(status="False")
+    await client.send_message(entity=user_id, message="<b>🔴 Бот был отправлен на технические работы.</b>", parse_mode="HTML")
+
+@client.on(events.NewMessage(pattern='🟢 Вывести из тех. работ'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    update_settingsx(status="True")
+    await client.send_message(entity=user_id, message="<b>🟢 Бот был выведен из технических работ.</b>", parse_mode="HTML")
+
+
+
+@client.on(events.NewMessage(pattern='🔧 Настройки'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    await client.send_message(entity=user_id, message=f"⚙ Основные настройки бота.\n\n" \
+                                                      f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n\n" \
+                                                      f"<code>🔴 Выключить покупки</code>\n" \
+                                                      f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
+                                                      f"<code>🟢 Включить покупки</code>\n" \
+                                                      f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
+                                                      f"<code>🔴 Отправить на тех. работы</code>\n" \
+                                                      f"➖➖➖➖➖➖➖➖➖➖➖➖➖\n" \
+                                                      f"<code>🟢 Вывести из тех. работ</code>\n", parse_mode="HTML")
 
 @client.on(events.NewMessage(pattern='📱 Профиль'))
 async def handler(event):
@@ -1042,28 +1224,29 @@ async def handler(event):
     @client.on(events.NewMessage)
     async def handler(event):
     
-        kkk = pos_add[1]
+        
         sender = await event.get_sender()
         ggg =  event.message
         name = utils.get_display_name(sender)
         user_id = utils.get_peer_id(sender)
-        if  event.message.message == kkk:
-            gaga = await client.download_media(event.message.photo, f"foto/{kkk}.jpg")
-            if gaga is not None:
-                catategory_id = pos_add[0]
-                position_name = pos_add[1]
-                position_price = pos_add[2]
-                position_discription = pos_add[3]
-                position_photo = f"foto/{kkk}.jpg"
-                position_id = [random.randint(100000000, 999999999)]
-                add_positionx(position_id[0], position_name, position_price, position_discription,
-                            position_photo, get_dates(), catategory_id)
-                await client.send_message(entity=user_id, message="<b>📁 Позиция была успешно создана ✅</b>", parse_mode="HTML")
-                pos_add.clear()
-            else:
-                await client.send_message(entity=user_id, message="<b>Фото Отсутствует</b>",  parse_mode="HTML")
+        if event.message.photo:
+            if  event.message.message == pos_add[1]:
+                gaga = await client.download_media(event.message.photo, f"foto/{pos_add[1]}.jpg")
+                if gaga is not None:
+                    catategory_id = pos_add[0]
+                    position_name = pos_add[1]
+                    position_price = pos_add[2]
+                    position_discription = pos_add[3]
+                    position_photo = f"foto/{pos_add[1]}.jpg"
+                    position_id = [random.randint(100000000, 999999999)]
+                    add_positionx(position_id[0], position_name, position_price, position_discription,
+                                position_photo, get_dates(), catategory_id)
+                    await client.send_message(entity=user_id, message="<b>📁 Позиция была успешно создана ✅</b>", parse_mode="HTML")
+                    pos_add.clear()
+                else:
+                    await client.send_message(entity=user_id, message="<b>Фото Отсутствует</b>",  parse_mode="HTML")
 
-    # if event.out and event.is_reply and 'save pic' in event.raw_text:
+        # if event.out and event.is_reply and 'save pic' in event.raw_text:
     #     reply_msg = await event.get_reply_message()
     #     replied_to_user = reply_msg.sender
 
@@ -1107,6 +1290,32 @@ async def handler(event):
     category_id = [random.randint(100000000, 999999999)]
     add_categoryx(category_id[0], kateg)
     await client.send_message(entity=user_id, message="<b>📜 Категория была успешно создана ✅</b>", parse_mode="HTML")
+
+
+
+@client.on(events.NewMessage(pattern=r'sms (\w+)'))
+async def handler(event):
+    sender = await event.get_sender()
+    ggg =  event.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    ss = event.message.message
+    spam = ss.split("sms ")[1]
+    users = get_all_usersx()
+    await client.send_message(entity=user_id, message=f"<b>📢 Рассылка началась...</b>", parse_mode="HTML")
+    asyncio.create_task(send_message_to_user(message=spam, user_id=user_id))
+
+@client.on(events.NewMessage(pattern='📢 Рассылка'))
+async def handler(event):
+    sender = await event.get_sender()
+    first_name = sender.first_name
+    ggg =  event.message
+    ff = ggg.message
+    name = utils.get_display_name(sender)
+    user_id = utils.get_peer_id(sender)
+    await client.send_message(entity=user_id, message=f"📢 <b>Введите команду <code>sms </code> и текст для рассылки пользователям:</b>", parse_mode="HTML")
+
+
 
 @client.on(events.NewMessage(pattern='📁 Создать позицию ➕'))
 async def handler(event):
@@ -1285,6 +1494,7 @@ async def handler(event):
                                                     f"<code>📱 Профиль</code>\n\n"
                                                     f"<code>🎁 Управление товарами 🖍</code>\n\n"
                                                     f"<code>🔆 Общие функции</code>\n\n"
+                                                    f"<code>🔧 Настройки</code>\n\n"
                                                     f"<code>📰 Информация о боте</code>\n\n"
                                                     f"<code>🔑 Платежные системы</code>\n\n"
                                                     f"<code>🥝 Баланс QIWI 👁</code>", parse_mode="HTML")   
@@ -1301,6 +1511,7 @@ async def handler(event):
                                                     f"<code>📱 Профиль</code>\n\n"
                                                     f"<code>🎁 Управление товарами 🖍</code>\n\n"
                                                     f"<code>🔆 Общие функции</code>\n\n"
+                                                    f"<code>🔧 Настройки</code>\n\n"
                                                     f"<code>🔑 Платежные системы</code>\n\n"
                                                     f"<code>🥝 Баланс QIWI 👁</code>", parse_mode="HTML")      
 
@@ -1503,20 +1714,28 @@ async def handler(event):
     ff = ggg.message
     name = utils.get_display_name(sender)
     us_id = utils.get_peer_id(sender)
-    x = 0
-    get_categories = get_all_categoriesx()
-    if len(get_categories) >= 1:
-        await client.send_message(entity=us_id, message=f"<b>🎁 Выберите нужный вам товар:</b>", parse_mode="HTML")
-        for a in range(len(get_categories)):
-            sender = await event.get_sender()
-            ggg =  event.message
-            ff = ggg.message
-            name = utils.get_display_name(sender)
-            us_id = utils.get_peer_id(sender)
-          
-            await client.send_message(entity=us_id, message=f"<b>{get_categories[a][2]}  Отправь 👉<code>{get_categories[a][1]}</code></b>", parse_mode="HTML")
-    else:
-        await client.send_message(entity=us_id, message="🎁 Товаров нет в наличии.", parse_mode="HTML")
+    get_settings = get_settingsx()
+    if get_settings[3] == "True" and  get_settings[2] == "True":
+        x = 0
+
+        get_categories = get_all_categoriesx()
+        if len(get_categories) >= 1:
+            await client.send_message(entity=us_id, message=f"<b>🎁 Выберите нужный вам товар:</b>", parse_mode="HTML")
+            for a in range(len(get_categories)):
+                sender = await event.get_sender()
+                ggg =  event.message
+                ff = ggg.message
+                name = utils.get_display_name(sender)
+                us_id = utils.get_peer_id(sender)
+            
+                await client.send_message(entity=us_id, message=f"<b>{get_categories[a][2]}  Отправь 👉<code>{get_categories[a][1]}</code></b>", parse_mode="HTML")
+        else:
+            await client.send_message(entity=us_id, message="🎁 Товаров нет в наличии.", parse_mode="HTML")
+    if get_settings[3] == "False": 
+        await client.send_message(entity=us_id, message=f"<b>🔴 Покупки в боте временно отключены</b>", parse_mode="HTML")
+    if  get_settings[2] == "False":
+        await client.send_message(entity=us_id, message=f"<b>🔴 Бот находится на технических работах.</b>", parse_mode="HTML")
+
 
 
 @client.on(events.NewMessage())
